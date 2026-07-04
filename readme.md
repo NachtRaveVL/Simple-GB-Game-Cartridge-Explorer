@@ -1,4 +1,4 @@
-# Game Cartridge Explorer
+# Simple GB Game Cartridge Explorer
 
 A simple GameBoy / GameBoy Color / MegaDuck / CougarBoy cartridge explorer and programmer built around the venerable Arduino Mega 2560.
 
@@ -126,10 +126,10 @@ LED status indicates programming progress and completion.
 
 | Command | Description |
 |----------|-------------|
-| `CLK <0|1>` | Assert/deassert CLK (falling edge synchronizes registers) |
-| `WR <0|1>` | Assert/deassert `/WE` |
-| `RD <0|1>` | Assert/deassert `/RD` |
-| `CS <0|1>` | Assert/deassert `/CS` (RAM override only) |
+| `CLK <0\|1>` | Assert/deassert CLK (falling edge synchronizes registers) |
+| `WR <0\|1>` | Assert/deassert `/WE` |
+| `RD <0\|1>` | Assert/deassert `/RD` |
+| `CS <0\|1>` | Assert/deassert `/CS` (RAM override only?) |
 | `DEASSERT` | Deassert all control lines |
 | `ADDR` | Display current address bus |
 | `ADDR <addr>` | Set address bus |
@@ -151,8 +151,8 @@ LED status indicates programming progress and completion.
 
 | Command | Description |
 |----------|-------------|
-| `BANK <hex>` | Select ROM bank |
-| `SIZE <bytes>` | Set ROM size used for dumping |
+| `BANK <hex>` | Selects ROM bank |
+| `SIZE <bytes>` | Sets ROM size used for dumping |
 | `ID` | Read ROM Manufacturer / Device ID |
 | `ERASE CHIP` | Erase entire ROM |
 | `ERASE <sector>` | Erase ROM sector |
@@ -167,9 +167,9 @@ LED status indicates programming progress and completion.
 | Command | Description |
 |----------|-------------|
 | `RAM <ON\|OFF>` | Enable or disable cartridge RAM |
-| `RAMBANK <hex>` | Select RAM bank |
-| `RAMSIZE <bytes>` | Set RAM size used for dumps |
-| `RAMBLANK` | Fill cartridge RAM with `0x00` |
+| `RAMBANK <hex>` | Selects RAM bank |
+| `RAMSIZE <bytes>` | Sets RAM size used for dumps/blanks |
+| `RAMBLANK` | Fills cartridge RAM with `0x00` |
 | `RAMPROG <file>` | Program RAM from SD card |
 | `RAMDUMP <file>` | Dump RAM to SD card |
 
@@ -180,7 +180,7 @@ LED status indicates programming progress and completion.
 | Region | Address |
 |---------|---------|
 | ROM Bank 0 | `0000h - 3FFFh` (fixed) |
-| ROM Bank N | `4000h - 7FFFh` (banked) |
+| ROM Bank 1/X | `4000h - 7FFFh` (banked) |
 | External RAM | `A000h - BFFFh` (banked) |
 
 ---
@@ -189,9 +189,9 @@ LED status indicates programming progress and completion.
 
 | State | Meaning |
 |-------|---------|
-| Solid On | Standalone programming completed successfully |
-| Fast Blink | Standalone programming failed |
-| Very Fast Blink | ROM programming or erase in progress |
+| Solid On | Programming "/rom.bin" completed (standalone mode) |
+| Fast Blink | Failure programming "/rom.bin" (standalone mode) |
+| Very Fast Blink | Programming/erasing chip activity |
 | Slow Blink | Ready for commands (interactive mode) |
 
 ---

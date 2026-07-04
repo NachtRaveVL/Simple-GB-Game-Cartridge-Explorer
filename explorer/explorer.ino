@@ -4,7 +4,7 @@
 //
 // Modes of Operation:
 // -  /w Serial Monitor: Interactive Mode - Command interpreter available for issuing commands to cartridge.
-// - w/o Serial Monitor: Non-Interactive Mode - Attempts to program from "\rom.bin", if available from SD card.
+// - w/o Serial Monitor: Standalone Mode - Attempts to program from "/rom.bin", if available from SD card.
 //
 // Command Interpreter:
 //  Basic Commands:
@@ -51,10 +51,10 @@
 //              RAM:      0xA000-0xBFFF (settable bank)
 //  
 //  LED Status:
-//         Solid On:      Programming "rom.bin" completed (non-interactive mode)
-//       Fast Blink:      Failure programming "rom.bin" (non-interactive mode)
+//         Solid On:      Programming "/rom.bin" completed (standalone mode)
+//       Fast Blink:      Failure programming "/rom.bin" (standalone mode)
 //  Very Fast Blink:      Programming/erasing chip activity
-//       Slow Blink:      Ready for next command (interactive mode)
+//       Slow Blink:      Ready for commands (interactive mode)
 //  
 //  ROM Short-Hand Sizes: 512,1,2,4,8,16,32,64      (512Kbit to 64Mbit)
 //  RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)
@@ -1213,10 +1213,10 @@ void cmdHelp()
     Serial.println("            RAM:      0xA000-0xBFFF (settable bank)");
     Serial.println();
     Serial.println("LED Status:");
-    Serial.println("       Solid On:      Programming \"rom.bin\" completed (non-interactive mode)");
-    Serial.println("     Fast Blink:      Failure programming \"rom.bin\" (non-interactive mode)");
+    Serial.println("       Solid On:      Programming \"/rom.bin\" completed (standalone mode)");
+    Serial.println("     Fast Blink:      Failure programming \"/rom.bin\" (standalone mode)");
     Serial.println("Very Fast Blink:      Programming/erasing chip activity");
-    Serial.println("     Slow Blink:      Ready for next command (interactive mode)");
+    Serial.println("     Slow Blink:      Ready for commands (interactive mode)");
     Serial.println();
     Serial.println("ROM Short-Hand Sizes: 512,1,2,4,8,16,32,64      (512Kbit to 64Mbit)");
     Serial.println("RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)");
@@ -1668,7 +1668,7 @@ void setup()
     digitalWrite(PIN_SD_CS, HIGH);
 
     Serial.begin(115200);
-    if (!Serial) { // Non-interactive mode
+    if (!Serial) { // standalone mode
         interactive_mode = false;
 
         SD.begin(PIN_SD_CS);
