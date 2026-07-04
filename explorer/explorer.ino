@@ -103,6 +103,18 @@ uint32_t ram_size = 32UL * 1024UL;                // RAM total bytes, default 32
 bool interactive_mode = true;                     // Interactive Serial mode flag
 bool looped_once = false;                         // Run once flag
 
+// You may need to adjust these to match your chip's specific codes. Refer to your chip's datasheet.
+const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1 (AM/SST style)
+const uint16_t FLASH_UNLOCK_DATA_1   = 0xAA;      // Flash unlock data 1 (AM/SST style)
+const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2 (AM/SST style)
+const uint16_t FLASH_UNLOCK_DATA_2   = 0x55;      // Flash unlock data 2 (AM/SST style)
+const uint16_t FLASH_PROGRAM_CMD     = 0xA0;      // Flash program command data (AM/SST style)
+const uint16_t FLASH_ERASE_CMD       = 0x80;      // Flash erase command data (AM/SST style)
+const uint16_t FLASH_SECT_ERASE_CMD  = 0x30;      // Flash sector erase command data (AM/SST style)
+const uint16_t FLASH_CHIP_ERASE_CMD  = 0x10;      // Flash chip erase command data (AM/SST style)
+const uint16_t FLASH_ID_ENTRY_CMD    = 0x90;      // Flash chip ID entry command data (AM/SST style)
+const uint16_t FLASH_ID_EXIT_CMD     = 0xF0;      // Flash chip ID exit command data (AM/SST style)
+
 const unsigned int SYNC_ON_CLK       = 0x01;      // Syncs on CLK (assertion triggers latch capture)
 const unsigned int SYNC_ON_WR        = 0x02;      // Syncs on /WR (assertion triggers latch capture)
 const unsigned int SYNC_ON_RD        = 0x04;      // Syncs on /RD (assertion triggers latch capture)
@@ -388,9 +400,9 @@ void flashProgram(uint16_t addr, uint8_t data)
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0xA0, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_PROGRAM_CMD, SYNC_ON_WR);
     busWrite(addr, data, SYNC_ON_WR);
 }
 
@@ -430,13 +442,13 @@ bool flashEraseChip()
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0x80, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ERASE_CMD, SYNC_ON_WR);
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0x10, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_CHIP_ERASE_CMD, SYNC_ON_WR);
 
     // expected = 0xFF after erase
     if (!waitForFlash(0x0000, 0xFF)) {
@@ -452,13 +464,13 @@ bool flashEraseSector(uint16_t sectorAddr)
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0x80, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ERASE_CMD, SYNC_ON_WR);
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(sectorAddr, 0x30, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(sectorAddr, FLASH_SECT_ERASE_CMD, SYNC_ON_WR);
 
     // expected = 0xFF after erase
     if (!waitForFlash(sectorAddr, 0xFF)) {
@@ -479,16 +491,16 @@ void flashReadID(uint8_t &manufacturer, uint8_t &device)
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0x90, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_ENTRY_CMD, SYNC_ON_WR);
 
     manufacturer = busRead(0x0000, SYNC_ON_RD);
     device       = busRead(0x0001, SYNC_ON_RD);
 
-    busWrite(0x5555, 0xAA, SYNC_ON_WR);
-    busWrite(0x2AAA, 0x55, SYNC_ON_WR);
-    busWrite(0x5555, 0xF0, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_EXIT_CMD, SYNC_ON_WR);
 }
 
 inline void blinkForAddress(unsigned int addr)

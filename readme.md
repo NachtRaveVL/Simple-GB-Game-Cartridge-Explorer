@@ -240,3 +240,4 @@ The following shorthand values may be used with the `RAMSIZE` command.
 - External RAM occupies `A000h-BFFFh`.
 - Bank translation is handled by their respective mappers.
 - The command interpreter intentionally exposes low-level bus control for development and debugging.
+- Uses AM/SST style Flash unlock sequence (`5555h`/`2AAAh`) - may need adjusted to match your ROM chip.
