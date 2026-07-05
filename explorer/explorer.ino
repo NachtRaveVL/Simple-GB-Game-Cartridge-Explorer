@@ -346,10 +346,19 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
     delayMicroseconds(1);
 
     setBus(addr, data); // forces data output mode
-    if (!(sync & SYNC_ON_WR)) assertWrite();
-    if (sync & SYNC_ON_CS) assertCableSelect();
-    if (sync & SYNC_ON_CLK) assertClock();
-    if (sync & SYNC_ON_WR) assertWrite();
+
+    if (sync & SYNC_ON_CLK) {
+        if (sync & SYNC_ON_CS) assertCableSelect();
+        assertWrite();
+        assertClock();
+    } else if (sync & SYNC_ON_WR) {
+        if (sync & SYNC_ON_CS) assertCableSelect();
+        assertWrite();
+    } else if (sync & SYNC_ON_CS) {
+        assertWrite();
+        assertCableSelect();
+    }
+
     delayMicroseconds(1);
 }
 
@@ -363,10 +372,19 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
     delayMicroseconds(1);
 
     setAddress(addr);
-    if (!(sync & SYNC_ON_RD)) assertRead();
-    if (sync & SYNC_ON_CS) assertCableSelect();
-    if (sync & SYNC_ON_CLK) assertClock();
-    if (sync & SYNC_ON_RD) assertRead();
+
+    if (sync & SYNC_ON_CLK) {
+        if (sync & SYNC_ON_CS) assertCableSelect();
+        assertRead();
+        assertClock();
+    } else if (sync & SYNC_ON_RD) {
+        if (sync & SYNC_ON_CS) assertCableSelect();
+        assertRead();
+    } else if (sync & SYNC_ON_CS) {
+        assertRead();
+        assertCableSelect();
+    }
+
     delayMicroseconds(1);
 
     uint8_t data = getData();
