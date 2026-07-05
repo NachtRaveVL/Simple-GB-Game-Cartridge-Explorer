@@ -11,21 +11,18 @@ This project provides both an interactive serial monitor for manual hardware con
 
 # Features
 
-- Interactive serial command interpreter
-- Direct cartridge bus control
-- ROM programming and verification
-- ROM erase (chip and sector)
-- ROM dumping to SD card
-- RAM read/write support
-- RAM dumping and programming
-- Automatic standalone programming of `/rom.bin` from SD card
+- Direct cartridge bus control and status analyzer
+- ROM/RAM erasing, programming-from/dumping-to SD card, and verification
+- RAM blanking (useful for FRAM chips)
+- Interactive serial command interpreter (when Serial Monitor attached)
+- Automatic standalone programming of `/rom.bin` from SD card (when no Serial Monitor attached), with LED status feedback
 - Supports banked Game Boy cartridges (original MBC and compatible, including MBC5)
 
 ---
 
 # Pin Setup
 
-The Simple GB Game Cartridge Explorer is designed around the venerable **Arduino Mega 2560**. Address and data buses are mapped directly to the ATMega2560's GPIO pins for straightforward wiring and debugging. Adapt as needed, all values can be easily accessed at the top of the explorer sketch.
+Address and data buses are mapped directly to the ATMega2560's GPIO pins for straightforward wiring and debugging. Adapt as needed, all values can be easily accessed at the top of the explorer sketch.
 
 ## Address Bus
 
@@ -191,6 +188,7 @@ LED status indicates programming progress and completion.
 | Fast Blink | Failure programming "/rom.bin" (standalone mode) |
 | Very Fast Blink | Programming/erasing chip activity |
 | Slow Blink | Ready for commands (interactive mode) |
+| Solid Off | Not yet initialized |
 
 ---
 
@@ -235,9 +233,9 @@ The following shorthand values may be used with the `RAMSIZE` command.
 # Notes
 
 - ROM banking follows the standard Game Boy memory map.
-  - ROM bank 0 is fixed and occupies `0000h-3FFFh`.
-  - The switchable ROM bank occupies `4000h-7FFFh`.
-  - External RAM occupies `A000h-BFFFh`.
+  - Fixed ROM bank 0 occupies `0000h-3FFFh`.
+  - Switchable ROM bank occupies `4000h-7FFFh`.
+  - Switchable RAM bank occupies `A000h-BFFFh`.
 - Bank translation is handled by their respective mappers.
 - The command interpreter intentionally exposes low-level bus control for development and debugging.
 - Uses AM/SST style Flash unlock sequence (`5555h`/`2AAAh`) - may need adjusted to match your ROM chip.

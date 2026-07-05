@@ -55,6 +55,7 @@
 //       Fast Blink:      Failure programming "/rom.bin" (standalone mode)
 //  Very Fast Blink:      Programming/erasing chip activity
 //       Slow Blink:      Ready for commands (interactive mode)
+//        Solid Off:      Not yet initialized / hardware fault
 //  
 //  ROM Short-Hand Sizes: 256,512,1,2,4,8,16,32,64,128 (256Kbit to 128Mbit)
 //  RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)
@@ -64,7 +65,7 @@
 #include <SD.h>
 
 // -----------------------------------------------------------------------------
-// Pin Setup
+// Setup
 // -----------------------------------------------------------------------------
 
 // Address Pins
@@ -89,6 +90,18 @@ const int PIN_RST = 2;
 const int PIN_SD_CS = 53;
 const int PIN_LED = 13;
 
+// You may need to adjust these to match your chip's specific codes. Refer to your chip's datasheet.
+const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1 (AM/SST style)
+const uint16_t FLASH_UNLOCK_DATA_1   = 0xAA;      // Flash unlock data 1 (AM/SST style)
+const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2 (AM/SST style)
+const uint16_t FLASH_UNLOCK_DATA_2   = 0x55;      // Flash unlock data 2 (AM/SST style)
+const uint16_t FLASH_PROGRAM_CMD     = 0xA0;      // Flash program command data (AM/SST style)
+const uint16_t FLASH_ERASE_CMD       = 0x80;      // Flash erase command data (AM/SST style)
+const uint16_t FLASH_SECT_ERASE_CMD  = 0x30;      // Flash sector erase command data (AM/SST style)
+const uint16_t FLASH_CHIP_ERASE_CMD  = 0x10;      // Flash chip erase command data (AM/SST style)
+const uint16_t FLASH_ID_ENTRY_CMD    = 0x90;      // Flash chip ID entry command data (AM/SST style)
+const uint16_t FLASH_ID_EXIT_CMD     = 0xF0;      // Flash chip ID exit command data (AM/SST style)
+
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
@@ -102,18 +115,6 @@ uint32_t rom_size = 4UL * 1024UL * 1024UL;        // ROM total bytes, default 4M
 uint32_t ram_size = 32UL * 1024UL;                // RAM total bytes, default 32KB
 bool interactive_mode = true;                     // Interactive Serial mode flag
 bool looped_once = false;                         // Run once flag
-
-// You may need to adjust these to match your chip's specific codes. Refer to your chip's datasheet.
-const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1 (AM/SST style)
-const uint16_t FLASH_UNLOCK_DATA_1   = 0xAA;      // Flash unlock data 1 (AM/SST style)
-const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2 (AM/SST style)
-const uint16_t FLASH_UNLOCK_DATA_2   = 0x55;      // Flash unlock data 2 (AM/SST style)
-const uint16_t FLASH_PROGRAM_CMD     = 0xA0;      // Flash program command data (AM/SST style)
-const uint16_t FLASH_ERASE_CMD       = 0x80;      // Flash erase command data (AM/SST style)
-const uint16_t FLASH_SECT_ERASE_CMD  = 0x30;      // Flash sector erase command data (AM/SST style)
-const uint16_t FLASH_CHIP_ERASE_CMD  = 0x10;      // Flash chip erase command data (AM/SST style)
-const uint16_t FLASH_ID_ENTRY_CMD    = 0x90;      // Flash chip ID entry command data (AM/SST style)
-const uint16_t FLASH_ID_EXIT_CMD     = 0xF0;      // Flash chip ID exit command data (AM/SST style)
 
 const unsigned int SYNC_ON_CLK       = 0x01;      // Syncs on CLK (assertion triggers latch capture)
 const unsigned int SYNC_ON_WR        = 0x02;      // Syncs on /WR (assertion triggers latch capture)
@@ -1231,6 +1232,7 @@ void cmdHelp()
     Serial.println("     Fast Blink:      Failure programming \"/rom.bin\" (standalone mode)");
     Serial.println("Very Fast Blink:      Programming/erasing chip activity");
     Serial.println("     Slow Blink:      Ready for commands (interactive mode)");
+    Serial.println("      Solid Off:      Not yet initialized / hardware fault");
     Serial.println();
     Serial.println("ROM Short-Hand Sizes: 512,1,2,4,8,16,32,64      (512Kbit to 64Mbit)");
     Serial.println("RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)");
