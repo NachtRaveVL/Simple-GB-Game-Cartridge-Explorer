@@ -91,6 +91,8 @@ const int PIN_RST = 2;
 const int PIN_SD_CS = 53;
 const int PIN_LED = 13;
 
+const bool HELP_PREVENT_BUS_CONTENTION = true;    // If true, asserts /WR upon DATA set issued to help prevent bus contention
+
 // You may need to adjust these to match your chip's specific codes. Refer to your chip's datasheet.
 const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1 (AM/SST style)
 const uint16_t FLASH_UNLOCK_DATA_1   = 0xAA;      // Flash unlock data 1 (AM/SST style)
@@ -1763,15 +1765,25 @@ void setup()
     }
 }
 
+inline void blinkForStatus(unsigned int blinkDiv) {
+    digitalWrite(PIN_LED, blinkDiv ? (millis() / blinkDiv) % 2 ? HIGH : LOW : HIGH);
+}
+
 void loop()
 {
     static unsigned int blinkDiv = 1000;
 
-    if (interactive_mode)
+    if (interactive_mode) {
         serialTask();
-    else if (!looped_once)
+
+        if (HELP_PREVENT_BUS_CONTENTION && isOutput(PIN_DATA[0]) && digitalRead(PIN_WR)) {
+            Serial.println("Asserting /WR to help prevent bus contention");
+            assertWrite();
+            Serial.println("/WR <= HIGH");
+        }
+    } else if (!looped_once)
         blinkDiv = programFile("rom.bin") ? 0 : 100;
 
-    digitalWrite(PIN_LED, blinkDiv ? ((millis() / blinkDiv) % 2) ? HIGH : LOW : HIGH);
+    blinkForStatus(blinkDiv);
     looped_once = true;
 }
