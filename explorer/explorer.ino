@@ -91,6 +91,7 @@ const int PIN_RST = 2;
 const int PIN_SD_CS = 53;
 const int PIN_LED = 13;
 
+const bool SLOW_DOWN_DATA_COMMS = false;          // If true, enables 1ms waits after bus commands and deasserts are issued
 const bool HELP_PREVENT_BUS_CONT_DATA_SET = true; // If true, asserts /WR upon DATA set issued to help prevent bus contention
 
 // -----------------------------------------------------------------------------
@@ -309,12 +310,14 @@ void deassertAllControls()
     digitalWrite(PIN_WR, HIGH);
     digitalWrite(PIN_RD, HIGH);
     digitalWrite(PIN_CS, HIGH);
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
 }
 
 void resetDevice()
 {
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
     digitalWrite(PIN_RST, LOW);
     rom_bank = 1;
     ram_bank = 0;
@@ -323,7 +326,8 @@ void resetDevice()
     curr_data = 0;
     delay(1);
     digitalWrite(PIN_RST, HIGH);
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
 }
 
 uint32_t mapAddress(uint16_t addr)
@@ -356,8 +360,10 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
     deassertRead();
     deassertWrite();
     if (sync & SYNC_INC_CS) deassertCableSelect();
-    setDataInput();
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS) {
+        setDataInput();
+        delayMicroseconds(1);
+    }
 
     setBus(addr, data); // forces data output mode
 
@@ -373,7 +379,8 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
         assertWrite();
     }
 
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
 }
 
 uint8_t busRead(uint16_t addr, uint8_t sync)
@@ -383,7 +390,8 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
     deassertWrite();
     if (sync & SYNC_INC_CS) deassertCableSelect();
     setDataInput();
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
 
     setAddress(addr);
 
@@ -399,10 +407,12 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
         assertRead();
     }
 
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
 
     uint8_t data = getData();
-    delayMicroseconds(1);
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
     return data;
 }
 
