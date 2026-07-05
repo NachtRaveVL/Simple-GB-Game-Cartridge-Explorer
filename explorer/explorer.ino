@@ -339,10 +339,11 @@ void demapRAMAddress(uint32_t physAddr, uint8_t &bank, uint16_t &offset)
 
 void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
 {
-    if (sync & SYNC_ON_CS) deassertCableSelect();
     if (sync & SYNC_ON_CLK) deassertClock();
+    if (sync & SYNC_ON_CS) deassertCableSelect();
     deassertRead();
     deassertWrite();
+    setDataInput();
     delayMicroseconds(1);
 
     setBus(addr, data); // forces data output mode
@@ -366,8 +367,8 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
 
 uint8_t busRead(uint16_t addr, uint8_t sync)
 {
-    if (sync & SYNC_ON_CS) deassertCableSelect();
     if (sync & SYNC_ON_CLK) deassertClock();
+    if (sync & SYNC_ON_CS) deassertCableSelect();
     deassertRead();
     deassertWrite();
     setDataInput();
@@ -425,7 +426,7 @@ void flashProgram(uint16_t addr, uint8_t data)
 {
     deassertAllControls(); // Safety
 
-    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_PROGRAM_CMD, SYNC_ON_WR);
     busWrite(addr, data, SYNC_ON_WR);
@@ -467,7 +468,7 @@ bool flashEraseChip()
 {
     deassertAllControls(); // Safety
 
-    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ERASE_CMD, SYNC_ON_WR);
 
@@ -489,7 +490,7 @@ bool flashEraseSector(uint16_t sectorAddr)
 {
     deassertAllControls(); // Safety
 
-    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ERASE_CMD, SYNC_ON_WR);
 
@@ -516,7 +517,7 @@ void flashReadID(uint8_t &manufacturer, uint8_t &device)
 {
     deassertAllControls(); // Safety
 
-    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
+    busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_ENTRY_CMD, SYNC_ON_WR);
 
