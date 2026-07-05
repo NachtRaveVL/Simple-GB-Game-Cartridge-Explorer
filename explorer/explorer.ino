@@ -93,18 +93,6 @@ const int PIN_LED = 13;
 
 const bool HELP_PREVENT_BUS_CONT_DATA_SET = true; // If true, asserts /WR upon DATA set issued to help prevent bus contention
 
-// You may need to adjust these to match your chip's specific codes. Refer to your chip's datasheet.
-const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1 (AM/SST style)
-const uint16_t FLASH_UNLOCK_DATA_1   = 0xAA;      // Flash unlock data 1 (AM/SST style)
-const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2 (AM/SST style)
-const uint16_t FLASH_UNLOCK_DATA_2   = 0x55;      // Flash unlock data 2 (AM/SST style)
-const uint16_t FLASH_PROGRAM_CMD     = 0xA0;      // Flash program command data (AM/SST style)
-const uint16_t FLASH_ERASE_CMD       = 0x80;      // Flash erase command data (AM/SST style)
-const uint16_t FLASH_SECT_ERASE_CMD  = 0x30;      // Flash sector erase command data (AM/SST style)
-const uint16_t FLASH_CHIP_ERASE_CMD  = 0x10;      // Flash chip erase command data (AM/SST style)
-const uint16_t FLASH_ID_ENTRY_CMD    = 0x90;      // Flash chip ID entry command data (AM/SST style)
-const uint16_t FLASH_ID_EXIT_CMD     = 0xF0;      // Flash chip ID exit command data (AM/SST style)
-
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
@@ -119,10 +107,32 @@ uint32_t ram_size = 32UL * 1024UL;                // RAM total bytes, default 32
 bool interactive_mode = true;                     // Interactive Serial mode flag
 bool looped_once = false;                         // Run once flag
 
+// AMD style unlock and command codes
+const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1
+const uint8_t FLASH_UNLOCK_DATA_1    = 0xAA;      // Flash unlock data 1
+const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2
+const uint8_t FLASH_UNLOCK_DATA_2    = 0x55;      // Flash unlock data 2
+const uint8_t FLASH_PROGRAM_CMD      = 0xA0;      // Flash program command data
+const uint8_t FLASH_ERASE_CMD        = 0x80;      // Flash erase command data
+const uint8_t FLASH_SECT_ERASE_CMD   = 0x30;      // Flash sector erase command data
+const uint8_t FLASH_CHIP_ERASE_CMD   = 0x10;      // Flash chip erase command data
+const uint8_t FLASH_ID_ENTRY_CMD     = 0x90;      // Flash chip ID entry command data
+const uint8_t FLASH_ID_EXIT_CMD      = 0xF0;      // Flash chip ID exit command data
+const uint16_t FLASH_ID_MFG_ADDR     = 0x0000;    // Flash chip manufacturer ID read address
+const uint16_t FLASH_ID_DEV_ADDR     = 0x0001;    // Flash chip device ID read address
+
+// Writeable addresses (other than RAM)
+const uint16_t MBC_RAM_ENABLE        = 0x0000;    // Standard GB MBC address for enabling RAM.
+const uint8_t MBC_RAM_ENABLE_TRUE    = 0x0A;      // Standard GB MBC data value for enabling RAM.
+const uint16_t MBC_ROM_BANK_LWR_SEL  = 0x2000;    // Standard GB MBC address for selecting lower byte of ROM bank.
+const uint16_t MBC_ROM_BANK_UPR_SEL  = 0x3000;    // Standard GB MBC5 address for selecting upper byte of ROM bank.
+const uint16_t MBC_RAM_BANK_SEL      = 0x4000;    // Standard GB MBC address for selecting RAM bank.
+
+// Bus transaction sync
 const unsigned int SYNC_ON_CLK       = 0x01;      // Syncs on CLK (assertion triggers latch capture)
 const unsigned int SYNC_ON_WR        = 0x02;      // Syncs on /WR (assertion triggers latch capture)
 const unsigned int SYNC_ON_RD        = 0x04;      // Syncs on /RD (assertion triggers latch capture)
-const unsigned int SYNC_INC_CS       = 0x08;      // Includes /CS assertion (RAM access)
+const unsigned int SYNC_INC_CS       = 0x08;      // Includes /CS assertion (for enabling RAM access)
 
 const unsigned int MAX_ERROR_COUNT   = 8;         // Verify failures before quit
 const unsigned int MAX_FLASH_RETRIES = 16;        // Retry verify time limit/attempts
@@ -398,27 +408,34 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
 
 void selectBank(uint16_t bank)
 {
+    static bool usedMBC5 = false;
+
     deassertAllControls(); // Safety
 
     rom_bank = bank ? bank : 1;
 
-    busWrite(0x2000, (uint8_t)(rom_bank & 0x00FF));
-    if (rom_bank > 0x00FF) // MBC5 support
-        busWrite(0x3000, (uint8_t)((rom_bank & 0xFF00) >> 8));
+    busWrite(MBC_ROM_BANK_LWR_SEL, (uint8_t)(rom_bank & 0x00FF));
+    if (rom_bank > 0x00FF) { // MBC5 support
+        busWrite(MBC_ROM_BANK_UPR_SEL, (uint8_t)((rom_bank & 0xFF00) >> 8));
+        usedMBC5 = true;
+    } else if (usedMBC5) { // special disabling when bank goes back under 256
+        busWrite(MBC_ROM_BANK_UPR_SEL, 0);
+        usedMBC5 = false;
+    }
 }
 
 void selectRAMBank(uint8_t bank)
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x4000, (ram_bank = bank));
+    busWrite(MBC_RAM_BANK_SEL, (ram_bank = bank));
 }
 
 void enableRAM(bool enable)
 {
     deassertAllControls(); // Safety
 
-    busWrite(0x0000, (ram_enabled = enable) ? 0x0A : 0x00);
+    busWrite(MBC_RAM_ENABLE, (ram_enabled = enable) ? MBC_RAM_ENABLE_TRUE : 0x00);
 }
 
 void flashProgram(uint16_t addr, uint8_t data)
@@ -527,8 +544,8 @@ void flashReadID(uint8_t &manufacturer, uint8_t &device)
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_ENTRY_CMD, SYNC_ON_WR);
 
-    manufacturer = busRead(0x0000, SYNC_ON_RD);
-    device       = busRead(0x0001, SYNC_ON_RD);
+    manufacturer = busRead(FLASH_ID_MFG_ADDR, SYNC_ON_RD);
+    device       = busRead(FLASH_ID_DEV_ADDR, SYNC_ON_RD);
 
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);

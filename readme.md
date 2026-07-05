@@ -70,18 +70,19 @@ Address and data buses are mapped directly to the ATMega2560's GPIO pins for str
 | `/WR` | 45 | Write strobe / flash synchronization |
 | `/RD` | 47 | Read strobe / flash synchronization |
 | `/CS` | 49 | RAM chip select override |
-| `RST` | 2 | Cartridge reset |
-| `SD_CS` | 53 | SD card chip select |
-| `LED` | 13 | Status LED |
+| `/RST` | 2 | Cartridge reset |
+| `/SD_CS` | 53 | SD card chip select |
 
 ---
 
 ## Notes
 
 - `CLK` is active on the **falling edge** due to cartridge being a peripheral device.
-- `/WR` and `/RD` are active-low control signals.
-- `/CS` is seemingly used only for overriding external RAM chip select during RAM operations.
+  - Cartridge has half a phase until clock rises to retrieve data (~119ns for GB).
+- `/WR`, `/RD`, `/CS`, `/RST`, and `/SD_CS` are active-low control signals.
+- `/CS` is used mainly for "overriding" RAM chip select during RAM operations.
 - Pin 53 is reserved for the SD card chip select while using an SD card module.
+- `/RST` is optional but best to connect it as well.
 
 # Operating Modes
 
@@ -124,7 +125,7 @@ LED status indicates programming progress and completion.
 | `CLK <0\|1>` | Assert/deassert CLK (falling edge synchronizes registers) |
 | `WR <0\|1>` | Assert/deassert `/WE` |
 | `RD <0\|1>` | Assert/deassert `/RD` |
-| `CS <0\|1>` | Assert/deassert `/CS` (RAM override only?) |
+| `CS <0\|1>` | Assert/deassert `/CS` (RAM select override only) |
 | `DEASSERT` | Deassert all control lines |
 | `ADDR` | Display current address bus |
 | `ADDR <addr>` | Set address bus |
@@ -148,13 +149,13 @@ LED status indicates programming progress and completion.
 | Command | Description |
 |----------|-------------|
 | `BANK <hex>` | Selects ROM bank |
-| `SIZE <bytes>` | Sets ROM size used for dumping |
+| `SIZE <bytes>` | Sets ROM size used for dumps |
 | `ID` | Read ROM Manufacturer / Device ID |
 | `ERASE CHIP` | Erase entire ROM |
 | `ERASE <sector>` | Erase ROM sector |
-| `PROG <addr> <data>` | Program one byte |
+| `PROG <addr> <data>` | Program one byte to ROM |
 | `PROG <file>` | Program ROM from SD card |
-| `DUMP <file>` | Dump ROM to SD card |
+| `DUMP <file>` | Dump entire ROM to SD card |
 
 ---
 
@@ -167,7 +168,7 @@ LED status indicates programming progress and completion.
 | `RAMSIZE <bytes>` | Sets RAM size used for dumps/blanks |
 | `RAMBLANK` | Fills cartridge RAM with `0x00` |
 | `RAMPROG <file>` | Program RAM from SD card |
-| `RAMDUMP <file>` | Dump RAM to SD card |
+| `RAMDUMP <file>` | Dump entire RAM to SD card |
 
 ---
 
@@ -177,7 +178,7 @@ LED status indicates programming progress and completion.
 |---------|---------|
 | ROM Bank 0 | `0000h - 3FFFh` (fixed) |
 | ROM Bank 1/X | `4000h - 7FFFh` (banked) |
-| External RAM | `A000h - BFFFh` (banked) |
+| RAM Bank X | `A000h - BFFFh` (banked) |
 
 ---
 
@@ -233,10 +234,15 @@ The following shorthand values may be used with the `RAMSIZE` command.
 
 # Notes
 
-- ROM banking follows the standard Game Boy memory map.
+- ROM banking follows the standard Game Boy memory map:
   - Fixed ROM bank 0 occupies `0000h-3FFFh`.
   - Switchable ROM bank occupies `4000h-7FFFh`.
   - Switchable RAM bank occupies `A000h-BFFFh`.
+  - Enable/disable RAM by writing `A0`/`00` to `0000h`.
+  - Select ROM bank (lower byte) by writing to `2000h`.
+  - Select ROM bank (upper byte) by writing to `3000h` (MBC5 compatibility).
+  - Select RAM bank by writing to `4000h`.
 - Bank translation is handled by their respective mappers.
 - The command interpreter intentionally exposes low-level bus control for development and debugging.
-- Uses AM/SST style Flash unlock sequence (`5555h`/`2AAAh`) - may need adjusted to match your ROM chip.
+- Uses standard AMD style Flash unlock sequences/commands (i.e. `5555h`/`2AAAh`) for ROM programming.
+  - These work for a wide range of chips, except Intel's.
