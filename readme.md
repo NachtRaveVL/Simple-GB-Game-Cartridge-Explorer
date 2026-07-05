@@ -130,6 +130,7 @@ LED status indicates programming progress and completion.
 | `ADDR <addr>` | Set address bus |
 | `DATA` | Display current data bus |
 | `DATA <data>` | Drive data bus (forces output mode) |
+| `DEPOWER` | Stops driving data bus |
 
 ---
 
@@ -188,7 +189,7 @@ LED status indicates programming progress and completion.
 | Fast Blink | Failure programming "/rom.bin" (standalone mode) |
 | Very Fast Blink | Programming/erasing chip activity |
 | Slow Blink | Ready for commands (interactive mode) |
-| Solid Off | Not yet initialized |
+| Solid Off | Not yet initialized / hardware fault |
 
 ---
 

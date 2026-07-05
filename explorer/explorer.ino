@@ -22,6 +22,7 @@
 //  ADDR <addr>           -> Sets address to ADDR
 //  DATA                  -> Displays current DATA (/w refresh)
 //  DATA <data>           -> Sets data to DATA (forces output mode - may contend)
+//  DEPOWER               -> Depowers driving data bus by putting it into input mode
 //  
 //  Bus Commands:
 //  READ  <addr>          -> Reads from ADDR
@@ -119,11 +120,11 @@ bool looped_once = false;                         // Run once flag
 const unsigned int SYNC_ON_CLK       = 0x01;      // Syncs on CLK (assertion triggers latch capture)
 const unsigned int SYNC_ON_WR        = 0x02;      // Syncs on /WR (assertion triggers latch capture)
 const unsigned int SYNC_ON_RD        = 0x04;      // Syncs on /RD (assertion triggers latch capture)
-const unsigned int SYNC_ON_CS        = 0x08;      // Syncs on /CS (assertion triggers latch capture)
+const unsigned int SYNC_INC_CS       = 0x08;      // Includes /CS assertion (RAM access)
 
 const unsigned int MAX_ERROR_COUNT   = 8;         // Verify failures before quit
 const unsigned int MAX_FLASH_RETRIES = 16;        // Retry verify time limit/attempts
-const unsigned int ADDR_BLINK_DIV    = 128;       // Bytes processed between blink reversals
+const unsigned int ADDR_BLINK_DIV    = 100;       // Bytes processed between blink reversals
 const unsigned int ROM_START         = 0x0000;    // 0x0000-0x3FFF (BANK 0), 0x4000-0x7FFF (BANK 1/X)
 const unsigned int ROM_BANK_SIZE     = 0x4000;    // 16KB
 const unsigned int RAM_START         = 0xA000;    // 0xA000-0xBFFF
@@ -340,25 +341,23 @@ void demapRAMAddress(uint32_t physAddr, uint8_t &bank, uint16_t &offset)
 void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
 {
     if (sync & SYNC_ON_CLK) deassertClock();
-    if (sync & SYNC_ON_CS) deassertCableSelect();
     deassertRead();
     deassertWrite();
+    if (sync & SYNC_INC_CS) deassertCableSelect();
     setDataInput();
     delayMicroseconds(1);
 
     setBus(addr, data); // forces data output mode
 
     if (sync & SYNC_ON_CLK) {
-        if (sync & SYNC_ON_CS) assertCableSelect();
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertWrite();
         assertClock();
     } else if (sync & SYNC_ON_WR) {
-        if (sync & SYNC_ON_CS) assertCableSelect();
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertWrite();
-    } else if (sync & SYNC_ON_CS) {
-        assertWrite();
-        assertCableSelect();
     } else {
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertWrite();
     }
 
@@ -368,25 +367,23 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
 uint8_t busRead(uint16_t addr, uint8_t sync)
 {
     if (sync & SYNC_ON_CLK) deassertClock();
-    if (sync & SYNC_ON_CS) deassertCableSelect();
     deassertRead();
     deassertWrite();
+    if (sync & SYNC_INC_CS) deassertCableSelect();
     setDataInput();
     delayMicroseconds(1);
 
     setAddress(addr);
 
     if (sync & SYNC_ON_CLK) {
-        if (sync & SYNC_ON_CS) assertCableSelect();
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertRead();
         assertClock();
     } else if (sync & SYNC_ON_RD) {
-        if (sync & SYNC_ON_CS) assertCableSelect();
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertRead();
-    } else if (sync & SYNC_ON_CS) {
-        assertRead();
-        assertCableSelect();
     } else {
+        if (sync & SYNC_INC_CS) assertCableSelect();
         assertRead();
     }
 
@@ -430,6 +427,7 @@ void flashProgram(uint16_t addr, uint8_t data)
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_PROGRAM_CMD, SYNC_ON_WR);
     busWrite(addr, data, SYNC_ON_WR);
+    deassertClock();
 }
 
 bool flashProgramVerify(uint16_t addr, uint8_t data)
@@ -480,9 +478,12 @@ bool flashEraseChip()
     if (!waitForFlash(0x0000, 0xFF)) {
         if (interactive_mode)
             Serial.println("FAIL CHIP ERASE TIMEOUT");
+
+        deassertClock();
         return false;
     }
 
+    deassertClock();
     return true;
 }
 
@@ -507,9 +508,12 @@ bool flashEraseSector(uint16_t sectorAddr)
             if (sectorAddr < 0x0010) Serial.print('0');
             Serial.println(sectorAddr);
         }
+
+        deassertClock();
         return false;
     }
 
+    deassertClock();
     return true;
 }
 
@@ -527,6 +531,7 @@ void flashReadID(uint8_t &manufacturer, uint8_t &device)
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_EXIT_CMD, SYNC_ON_WR);
+    deassertClock();
 }
 
 inline void blinkForAddress(unsigned int addr)
@@ -572,7 +577,7 @@ bool programFile(const char *filename)
             else if (!flashVerify(addr, rom.read())) {
                 if (interactive_mode) {
                     Serial.print("FAIL @ BYTE #");
-                    Serial.print(physAddr);
+                    Serial.print(physAddr + 1);
                     Serial.print(", BANK: 0x");
                     if (bank < 0x1000) Serial.print('0');
                     if (bank < 0x0100) Serial.print('0');
@@ -684,11 +689,11 @@ bool blankRAM()
             blinkForAddress(physAddr);
 
             if (!phase)
-                busWrite(addr, 0x00, SYNC_ON_CLK | SYNC_ON_CS);
-            else if (busRead(addr, SYNC_ON_CLK | SYNC_ON_CS) != 0x00) {
+                busWrite(addr, 0x00, SYNC_ON_CLK | SYNC_INC_CS);
+            else if (busRead(addr, SYNC_ON_CLK | SYNC_INC_CS) != 0x00) {
                 if (interactive_mode) {
                     Serial.print("FAIL @ BYTE #");
-                    Serial.print(physAddr);
+                    Serial.print(physAddr + 1);
                     Serial.print(", BANK: 0x");
                     if (bank < 0x1000) Serial.print('0');
                     if (bank < 0x0100) Serial.print('0');
@@ -764,11 +769,11 @@ bool programRAMFile(const char *filename)
             blinkForAddress(physAddr);
     
             if (!phase)
-                busWrite(addr, ram.read(), SYNC_ON_CLK | SYNC_ON_CS);
-            else if (busRead(addr, SYNC_ON_CLK | SYNC_ON_CS) != ram.read()) {
+                busWrite(addr, ram.read(), SYNC_ON_CLK | SYNC_INC_CS);
+            else if (busRead(addr, SYNC_ON_CLK | SYNC_INC_CS) != ram.read()) {
                 if (interactive_mode) {
                     Serial.print("FAIL @ BYTE #");
-                    Serial.print(physAddr);
+                    Serial.print(physAddr + 1);
                     Serial.print(", BANK: 0x");
                     if (bank < 0x1000) Serial.print('0');
                     if (bank < 0x0100) Serial.print('0');
@@ -842,7 +847,7 @@ bool dumpRAMFile(const char *filename)
 
         blinkForAddress(physAddr);
 
-        ram.write(busRead(addr, SYNC_ON_CLK | SYNC_ON_CS));
+        ram.write(busRead(addr, SYNC_ON_CLK | SYNC_INC_CS));
     }
 
     ram.close();
@@ -876,6 +881,7 @@ void cmdAddress();
 void cmdAddress(uint16_t addr);
 void cmdData();
 void cmdData(uint8_t data);
+void cmdDepower();
 
 void cmdBusRead(uint16_t addr);
 void cmdBusWrite(uint16_t addr, uint8_t data);
@@ -1041,6 +1047,15 @@ void processCommand(String line)
             cmdData(strtoul(argv[1], nullptr, 16));
             return;
         }
+    }
+
+    //--------------------------------------------------
+    // DEPOWER
+    //--------------------------------------------------
+    if (!strcmp(argv[0], "DEPOWER"))
+    {
+        cmdDepower();
+        return;
     }
 
     //--------------------------------------------------
@@ -1222,6 +1237,7 @@ void cmdHelp()
     Serial.println("ADDR <addr>           -> Sets address to ADDR");
     Serial.println("DATA                  -> Displays current DATA (/w refresh)");
     Serial.println("DATA <data>           -> Sets data to DATA (forces output mode - may contend)");
+    Serial.println("DEPOWER               -> Depowers driving data bus by putting it into input mode");
     Serial.println();
     Serial.println("Bus Commands:");
     Serial.println("READ  <addr>          -> Reads from ADDR");
@@ -1447,6 +1463,14 @@ void cmdData(uint8_t data)
     Serial.print("DATA <= 0x");
     if (data < 0x10) Serial.print('0');
     Serial.println(data, HEX);
+}
+
+void cmdDepower()
+{
+    Serial.println();
+    Serial.println("Depowering data bus");
+
+    setDataInput();
 }
 
 void cmdBusRead(uint16_t addr)
