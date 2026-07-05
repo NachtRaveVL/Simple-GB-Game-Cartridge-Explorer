@@ -357,6 +357,8 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
     } else if (sync & SYNC_ON_CS) {
         assertWrite();
         assertCableSelect();
+    } else {
+        assertWrite();
     }
 
     delayMicroseconds(1);
@@ -383,6 +385,8 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
     } else if (sync & SYNC_ON_CS) {
         assertRead();
         assertCableSelect();
+    } else {
+        assertRead();
     }
 
     delayMicroseconds(1);
