@@ -1,8 +1,8 @@
 # Simple GB Game Cartridge Explorer
 
-A simple GameBoy / GameBoy Color / MegaDuck / CougarBoy cartridge explorer and programmer built around the venerable Arduino Mega 2560.
+A simple GameBoy / GameBoy Color / MegaDuck / CougarBoy game cartridge explorer and programmer built around the venerable **Arduino Mega 2560**.
 
-The project provides both an interactive serial monitor for manual hardware control and a standalone SD-card programming mode for quickly programming ROM images.
+This project provides both an interactive serial monitor for manual hardware control and a standalone SD-card programming mode for quickly programming ROM images.
 
 **Copyright © 2026 NR RetroWorks**  
 **License:** MIT
@@ -19,15 +19,13 @@ The project provides both an interactive serial monitor for manual hardware cont
 - RAM read/write support
 - RAM dumping and programming
 - Automatic standalone programming of `/rom.bin` from SD card
-- Supports banked Game Boy cartridges (original MBC and MBC-compatible)
+- Supports banked Game Boy cartridges (original MBC and compatible, including MBC5)
 
 ---
 
 # Pin Setup
 
-# Pin Assignments
-
-The Simple GB Game Cartridge Explorer is designed around the **Arduino Mega 2560**. Address and data buses are mapped directly to the ATMega2560's GPIO pins for straightforward wiring and debugging. Adapt as needed, all values can be easily accessed at the top of the explorer sketch.
+The Simple GB Game Cartridge Explorer is designed around the venerable **Arduino Mega 2560**. Address and data buses are mapped directly to the ATMega2560's GPIO pins for straightforward wiring and debugging. Adapt as needed, all values can be easily accessed at the top of the explorer sketch.
 
 ## Address Bus
 
@@ -83,18 +81,18 @@ The Simple GB Game Cartridge Explorer is designed around the **Arduino Mega 2560
 
 ## Notes
 
-- `CLK` is active on the **falling edge**.
+- `CLK` is active on the **falling edge** due to cartridge being a peripheral device.
 - `/WR` and `/RD` are active-low control signals.
-- `/CS` is used only for overriding external RAM chip select during RAM operations.
-- Pin 53 is reserved for the SD card chip select while using the Arduino Mega's hardware SPI interface.
+- `/CS` is seemingly used only for overriding external RAM chip select during RAM operations.
+- Pin 53 is reserved for the SD card chip select while using an SD card module.
 
 # Operating Modes
 
 ## Interactive Mode
 
-When a serial terminal is connected, the explorer enters an interactive command interpreter.
+When a serial terminal is connected, the explorer enters an interactive command interpreter. Commands can be typed into the monitor to expose/affect hardware state.
 
-This mode allows complete manual control over the cartridge bus, ROM, and RAM.
+This mode allows complete manual control over the cartridge bus, ROM, and RAM (if installed).
 
 ## Standalone Mode
 
@@ -237,9 +235,9 @@ The following shorthand values may be used with the `RAMSIZE` command.
 # Notes
 
 - ROM banking follows the standard Game Boy memory map.
-- ROM bank 0 is fixed and occupies `0000h-3FFFh`.
-- The switchable ROM bank occupies `4000h-7FFFh`.
-- External RAM occupies `A000h-BFFFh`.
+-- ROM bank 0 is fixed and occupies `0000h-3FFFh`.
+-- The switchable ROM bank occupies `4000h-7FFFh`.
+-- External RAM occupies `A000h-BFFFh`.
 - Bank translation is handled by their respective mappers.
 - The command interpreter intentionally exposes low-level bus control for development and debugging.
 - Uses AM/SST style Flash unlock sequence (`5555h`/`2AAAh`) - may need adjusted to match your ROM chip.
