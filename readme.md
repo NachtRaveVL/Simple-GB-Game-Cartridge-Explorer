@@ -202,6 +202,7 @@ The following shorthand values may be used with the `SIZE` command.
 
 | Value | Size |
 |------:|------|
+| `256` | 256 Kbit |
 | `512` | 512 Kbit |
 | `1` | 1 Mbit |
 | `2` | 2 Mbit |
@@ -210,6 +211,7 @@ The following shorthand values may be used with the `SIZE` command.
 | `16` | 16 Mbit |
 | `32` | 32 Mbit |
 | `64` | 64 Mbit |
+| `128` | 128 Mbit |
 
 ---
 

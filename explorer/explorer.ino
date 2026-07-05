@@ -56,7 +56,7 @@
 //  Very Fast Blink:      Programming/erasing chip activity
 //       Slow Blink:      Ready for commands (interactive mode)
 //  
-//  ROM Short-Hand Sizes: 512,1,2,4,8,16,32,64      (512Kbit to 64Mbit)
+//  ROM Short-Hand Sizes: 256,512,1,2,4,8,16,32,64,128 (256Kbit to 128Mbit)
 //  RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)
 
 #include <Arduino.h>
@@ -129,6 +129,7 @@ const unsigned int RAM_START         = 0xA000;    // 0xA000-0xBFFF
 const unsigned int RAM_BANK_SIZE     = 0x2000;    // 8KB
 
 // Short-hand ROM sizes (in Kbit/Mbit)
+const unsigned int ROM_SIZE_256KBIT = 256;
 const unsigned int ROM_SIZE_512KBIT = 512;
 const unsigned int ROM_SIZE_1MBIT   = 1;
 const unsigned int ROM_SIZE_2MBIT   = 2;
@@ -137,6 +138,7 @@ const unsigned int ROM_SIZE_8MBIT   = 8;
 const unsigned int ROM_SIZE_16MBIT  = 16;
 const unsigned int ROM_SIZE_32MBIT  = 32;
 const unsigned int ROM_SIZE_64MBIT  = 64;
+const unsigned int ROM_SIZE_128MBIT = 128;
 
 // Short-hand RAM sizes (in Kbit/Mbit)
 const unsigned int RAM_SIZE_2KBIT   = 2;
@@ -1473,15 +1475,17 @@ void cmdSize(uint32_t size)
 
     switch (size)
     {
-        case ROM_SIZE_512KBIT: rom_size = 64UL * 1024UL;   break; // 512 Kbit
-        case ROM_SIZE_1MBIT:   rom_size = 128UL * 1024UL;  break; // 1 Mbit
-        case ROM_SIZE_2MBIT:   rom_size = 256UL * 1024UL;  break; // 2 Mbit
-        case ROM_SIZE_4MBIT:   rom_size = 512UL * 1024UL;  break; // 4 Mbit
-        case ROM_SIZE_8MBIT:   rom_size = 1024UL * 1024UL; break; // 8 Mbit
-        case ROM_SIZE_16MBIT:  rom_size = 2048UL * 1024UL; break; // 16 Mbit
-        case ROM_SIZE_32MBIT:  rom_size = 4096UL * 1024UL; break; // 32 Mbit
-        case ROM_SIZE_64MBIT:  rom_size = 8192UL * 1024UL; break; // 64 Mbit
-        default:               rom_size = size;            break; // Custom 
+        case ROM_SIZE_256KBIT: rom_size = 32UL * 1024UL;    break; // 256 Kbit
+        case ROM_SIZE_512KBIT: rom_size = 64UL * 1024UL;    break; // 512 Kbit
+        case ROM_SIZE_1MBIT:   rom_size = 128UL * 1024UL;   break; // 1 Mbit
+        case ROM_SIZE_2MBIT:   rom_size = 256UL * 1024UL;   break; // 2 Mbit
+        case ROM_SIZE_4MBIT:   rom_size = 512UL * 1024UL;   break; // 4 Mbit
+        case ROM_SIZE_8MBIT:   rom_size = 1024UL * 1024UL;  break; // 8 Mbit
+        case ROM_SIZE_16MBIT:  rom_size = 2048UL * 1024UL;  break; // 16 Mbit
+        case ROM_SIZE_32MBIT:  rom_size = 4096UL * 1024UL;  break; // 32 Mbit
+        case ROM_SIZE_64MBIT:  rom_size = 8192UL * 1024UL;  break; // 64 Mbit
+        case ROM_SIZE_128MBIT: rom_size = 16384UL * 1024UL; break; // 128 Mbit
+        default:               rom_size = size;             break; // Custom 
     }
 
     Serial.print("ROM SIZE <= ");
