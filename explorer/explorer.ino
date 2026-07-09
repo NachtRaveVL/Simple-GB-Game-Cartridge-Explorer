@@ -91,57 +91,57 @@ const int PIN_RST = 2;
 const int PIN_SD_CS = 53;
 const int PIN_LED = 13;
 
-const bool SLOW_DOWN_DATA_COMMS = false;          // If true, enables 1ms waits after bus commands and deasserts are issued
-const bool HELP_PREVENT_BUS_CONT_DATA_SET = true; // If true, asserts /WR upon DATA set issued to help prevent bus contention
+const bool SLOW_DOWN_DATA_COMMS = true;         // If true, enables 1ms waits in key spots to allow settle time between control inversions
+const bool HELP_PREVENT_BUS_CONT = true;        // If true, helps prevent bus contention by depowering data bus and (de)asserting /WR when appropriate
 
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
 
-uint16_t rom_bank = 1;                            // Current rom bank (shadowed)
-uint8_t ram_bank = 0;                             // Current ram bank (shadowed)
-bool ram_enabled = false;                         // RAM enable flag (shadowed)
-uint16_t curr_addr = 0;                           // Current ADDR (shadowed)
-uint8_t curr_data = 0;                            // Current DATA (shadowed)
-uint32_t rom_size = 4UL * 1024UL * 1024UL;        // ROM total bytes, default 4MB
-uint32_t ram_size = 32UL * 1024UL;                // RAM total bytes, default 32KB
-bool interactive_mode = true;                     // Interactive Serial mode flag
-bool looped_once = false;                         // Run once flag
+uint16_t rom_bank = 1;                          // Current rom bank (shadowed)
+uint8_t ram_bank = 0;                           // Current ram bank (shadowed)
+bool ram_enabled = false;                       // RAM enable flag (shadowed)
+uint16_t curr_addr = 0;                         // Current ADDR (shadowed)
+uint8_t curr_data = 0;                          // Current DATA (shadowed)
+uint32_t rom_size = 4UL * 1024UL * 1024UL;      // ROM total bytes, default 4MB
+uint32_t ram_size = 32UL * 1024UL;              // RAM total bytes, default 32KB
+bool interactive_mode = true;                   // Interactive Serial mode flag
+bool looped_once = false;                       // Run once flag
 
 // AMD style unlock and command codes
-const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;    // Flash unlock address 1
-const uint8_t FLASH_UNLOCK_DATA_1    = 0xAA;      // Flash unlock data 1
-const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;    // Flash unlock address 2
-const uint8_t FLASH_UNLOCK_DATA_2    = 0x55;      // Flash unlock data 2
-const uint8_t FLASH_PROGRAM_CMD      = 0xA0;      // Flash program command data
-const uint8_t FLASH_ERASE_CMD        = 0x80;      // Flash erase command data
-const uint8_t FLASH_SECT_ERASE_CMD   = 0x30;      // Flash sector erase command data
-const uint8_t FLASH_CHIP_ERASE_CMD   = 0x10;      // Flash chip erase command data
-const uint8_t FLASH_ID_ENTRY_CMD     = 0x90;      // Flash chip ID entry command data
-const uint8_t FLASH_ID_EXIT_CMD      = 0xF0;      // Flash chip ID exit command data
-const uint16_t FLASH_ID_MFG_ADDR     = 0x0000;    // Flash chip manufacturer ID read address
-const uint16_t FLASH_ID_DEV_ADDR     = 0x0001;    // Flash chip device ID read address
+const uint16_t FLASH_UNLOCK_ADDR_1   = 0x5555;  // Flash unlock address 1
+const uint8_t FLASH_UNLOCK_DATA_1    = 0xAA;    // Flash unlock data 1
+const uint16_t FLASH_UNLOCK_ADDR_2   = 0x2AAA;  // Flash unlock address 2
+const uint8_t FLASH_UNLOCK_DATA_2    = 0x55;    // Flash unlock data 2
+const uint8_t FLASH_PROGRAM_CMD      = 0xA0;    // Flash program command data
+const uint8_t FLASH_ERASE_CMD        = 0x80;    // Flash erase command data
+const uint8_t FLASH_SECT_ERASE_CMD   = 0x30;    // Flash sector erase command data
+const uint8_t FLASH_CHIP_ERASE_CMD   = 0x10;    // Flash chip erase command data
+const uint8_t FLASH_ID_ENTRY_CMD     = 0x90;    // Flash chip ID entry command data
+const uint8_t FLASH_ID_EXIT_CMD      = 0xF0;    // Flash chip ID exit command data
+const uint16_t FLASH_ID_MFG_ADDR     = 0x0000;  // Flash chip manufacturer ID read address
+const uint16_t FLASH_ID_DEV_ADDR     = 0x0001;  // Flash chip device ID read address
 
 // Writeable addresses (other than RAM)
-const uint16_t MBC_RAM_ENABLE        = 0x0000;    // Standard GB MBC address for enabling RAM.
-const uint8_t MBC_RAM_ENABLE_TRUE    = 0x0A;      // Standard GB MBC data value for enabling RAM.
-const uint16_t MBC_ROM_BANK_LWR_SEL  = 0x2000;    // Standard GB MBC address for selecting lower byte of ROM bank.
-const uint16_t MBC_ROM_BANK_UPR_SEL  = 0x3000;    // Standard GB MBC5 address for selecting upper byte of ROM bank.
-const uint16_t MBC_RAM_BANK_SEL      = 0x4000;    // Standard GB MBC address for selecting RAM bank.
+const uint16_t MBC_RAM_ENABLE        = 0x0000;  // Standard GB MBC address for enabling RAM.
+const uint8_t MBC_RAM_ENABLE_TRUE    = 0x0A;    // Standard GB MBC data value for enabling RAM.
+const uint16_t MBC_ROM_BANK_LWR_SEL  = 0x2000;  // Standard GB MBC address for selecting lower byte of ROM bank.
+const uint16_t MBC_ROM_BANK_UPR_SEL  = 0x3000;  // Standard GB MBC5 address for selecting upper byte of ROM bank.
+const uint16_t MBC_RAM_BANK_SEL      = 0x4000;  // Standard GB MBC address for selecting RAM bank.
 
 // Bus transaction sync
-const unsigned int SYNC_ON_CLK       = 0x01;      // Syncs on CLK (assertion triggers latch capture)
-const unsigned int SYNC_ON_WR        = 0x02;      // Syncs on /WR (assertion triggers latch capture)
-const unsigned int SYNC_ON_RD        = 0x04;      // Syncs on /RD (assertion triggers latch capture)
-const unsigned int SYNC_INC_CS       = 0x08;      // Includes /CS assertion (for enabling RAM access)
+const unsigned int SYNC_ON_CLK       = 0x01;    // Syncs on CLK (assertion triggers latch capture)
+const unsigned int SYNC_ON_WR        = 0x02;    // Syncs on /WR (assertion triggers latch capture)
+const unsigned int SYNC_ON_RD        = 0x04;    // Syncs on /RD (assertion triggers latch capture)
+const unsigned int SYNC_INC_CS       = 0x08;    // Includes /CS assertion (for enabling RAM access)
 
-const unsigned int MAX_ERROR_COUNT   = 8;         // Verify failures before quit
-const unsigned int MAX_FLASH_RETRIES = 16;        // Retry verify time limit/attempts
-const unsigned int ADDR_BLINK_DIV    = 100;       // Bytes processed between blink reversals
-const unsigned int ROM_START         = 0x0000;    // 0x0000-0x3FFF (BANK 0), 0x4000-0x7FFF (BANK 1/X)
-const unsigned int ROM_BANK_SIZE     = 0x4000;    // 16KB
-const unsigned int RAM_START         = 0xA000;    // 0xA000-0xBFFF
-const unsigned int RAM_BANK_SIZE     = 0x2000;    // 8KB
+const unsigned int MAX_ERROR_COUNT   = 8;       // Verify failures before quit
+const unsigned int MAX_FLASH_RETRIES = 16;      // Retry verify time limit/attempts
+const unsigned int ADDR_BLINK_DIV    = 100;     // Bytes processed between blink reversals
+const unsigned int ROM_START         = 0x0000;  // 0x0000-0x3FFF (BANK 0), 0x4000-0x7FFF (BANK 1/X)
+const unsigned int ROM_BANK_SIZE     = 0x4000;  // 16KB
+const unsigned int RAM_START         = 0xA000;  // 0xA000-0xBFFF
+const unsigned int RAM_BANK_SIZE     = 0x2000;  // 8KB
 
 // Short-hand ROM sizes (in Kbit/Mbit)
 const unsigned int ROM_SIZE_256KBIT = 256;
@@ -187,6 +187,7 @@ void deassertWrite();
 void assertCableSelect();
 void deassertCableSelect();
 void deassertAllControls();
+void deassertAllControlsAndDepower();
 
 void resetDevice();
 
@@ -216,6 +217,12 @@ bool dumpFile(const char *filename);
 bool blankRAM();
 bool programRAMFile(const char *filename);
 bool dumpRAMFile(const char *filename);
+
+inline bool isOutput(uint8_t pin)
+{
+    return (*portModeRegister(digitalPinToPort(pin)) &
+            digitalPinToBitMask(pin)) != 0;
+}
 
 void setDataInput()
 {
@@ -310,24 +317,32 @@ void deassertAllControls()
     digitalWrite(PIN_WR, HIGH);
     digitalWrite(PIN_RD, HIGH);
     digitalWrite(PIN_CS, HIGH);
-    if (SLOW_DOWN_DATA_COMMS)
-        delayMicroseconds(1);
+}
+
+void deassertAllControlsAndDepower()
+{
+    deassertAllControls();
+
+    if (isOutput(PIN_DATA[0])) {
+        if (SLOW_DOWN_DATA_COMMS)
+            delayMicroseconds(1);
+        setDataInput();
+    }
 }
 
 void resetDevice()
 {
-    if (SLOW_DOWN_DATA_COMMS)
-        delayMicroseconds(1);
+    deassertAllControls();
+    setDataInput();
+    delayMicroseconds(20);
     digitalWrite(PIN_RST, LOW);
     rom_bank = 1;
     ram_bank = 0;
     ram_enabled = false;
     curr_addr = 0;
     curr_data = 0;
-    delay(1);
+    delay(1000);
     digitalWrite(PIN_RST, HIGH);
-    if (SLOW_DOWN_DATA_COMMS)
-        delayMicroseconds(1);
 }
 
 uint32_t mapAddress(uint16_t addr)
@@ -369,13 +384,17 @@ void busWrite(uint16_t addr, uint8_t data, uint8_t sync)
 
     if (sync & SYNC_ON_CLK) {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertWrite();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertClock();
     } else if (sync & SYNC_ON_WR) {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertWrite();
     } else {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertWrite();
     }
 
@@ -397,30 +416,31 @@ uint8_t busRead(uint16_t addr, uint8_t sync)
 
     if (sync & SYNC_ON_CLK) {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertRead();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertClock();
     } else if (sync & SYNC_ON_RD) {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertRead();
     } else {
         if (sync & SYNC_INC_CS) assertCableSelect();
+        if (SLOW_DOWN_DATA_COMMS) delayMicroseconds(1);
         assertRead();
     }
 
     if (SLOW_DOWN_DATA_COMMS)
         delayMicroseconds(1);
 
-    uint8_t data = getData();
-    if (SLOW_DOWN_DATA_COMMS)
-        delayMicroseconds(1);
-    return data;
+    return getData();
 }
 
 void selectBank(uint16_t bank)
 {
     static bool usedMBC5 = false;
 
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     rom_bank = bank ? bank : 1;
 
@@ -432,45 +452,61 @@ void selectBank(uint16_t bank)
         busWrite(MBC_ROM_BANK_UPR_SEL, 0);
         usedMBC5 = false;
     }
+
+    deassertAllControlsAndDepower();
 }
 
 void selectRAMBank(uint8_t bank)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(MBC_RAM_BANK_SEL, (ram_bank = bank));
+
+    deassertAllControlsAndDepower();
 }
 
 void enableRAM(bool enable)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(MBC_RAM_ENABLE, (ram_enabled = enable) ? MBC_RAM_ENABLE_TRUE : 0x00);
+
+    deassertAllControlsAndDepower();
 }
 
 void flashProgram(uint16_t addr, uint8_t data)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_PROGRAM_CMD, SYNC_ON_WR);
+
     busWrite(addr, data, SYNC_ON_WR);
-    deassertClock();
+
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
+    deassertWrite();
+    if (SLOW_DOWN_DATA_COMMS)
+        delayMicroseconds(1);
+
+    deassertAllControlsAndDepower();
 }
 
 bool flashProgramVerify(uint16_t addr, uint8_t data)
 {
     flashProgram(addr, data);
-    delayMicroseconds(50);
-    return data == busRead(addr, SYNC_ON_RD);
+    delayMicroseconds(20);
+    return flashVerify(addr, data);
 }
 
 bool flashVerify(uint16_t addr, uint8_t data)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
-    return busRead(addr, SYNC_ON_RD) == data;
+    bool valid = (busRead(addr, SYNC_ON_RD | SYNC_ON_CLK) == data);
+    deassertAllControlsAndDepower();
+    return valid;
 }
 
 bool waitForFlash(uint16_t addr, uint8_t expected, int timeout = MAX_FLASH_RETRIES)
@@ -485,7 +521,8 @@ bool waitForFlash(uint16_t addr, uint8_t expected, int timeout = MAX_FLASH_RETRI
                 return true;
         }
 
-        delay(1);
+        digitalWrite(PIN_LED, timeout % 2 == 0 ? HIGH : LOW);
+        delay(100);
     }
 
     return false; // timeout
@@ -493,7 +530,7 @@ bool waitForFlash(uint16_t addr, uint8_t expected, int timeout = MAX_FLASH_RETRI
 
 bool flashEraseChip()
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
@@ -503,22 +540,25 @@ bool flashEraseChip()
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_CHIP_ERASE_CMD, SYNC_ON_WR);
 
+    deassertWrite();
+    delay(100);
+
     // expected = 0xFF after erase
     if (!waitForFlash(0x0000, 0xFF)) {
         if (interactive_mode)
             Serial.println("FAIL CHIP ERASE TIMEOUT");
 
-        deassertClock();
+        deassertAllControlsAndDepower();
         return false;
     }
 
-    deassertClock();
+    deassertAllControlsAndDepower();
     return true;
 }
 
 bool flashEraseSector(uint16_t sectorAddr)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
@@ -527,6 +567,9 @@ bool flashEraseSector(uint16_t sectorAddr)
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(sectorAddr, FLASH_SECT_ERASE_CMD, SYNC_ON_WR);
+
+    deassertWrite();
+    delay(25);
 
     // expected = 0xFF after erase
     if (!waitForFlash(sectorAddr, 0xFF)) {
@@ -538,21 +581,24 @@ bool flashEraseSector(uint16_t sectorAddr)
             Serial.println(sectorAddr);
         }
 
-        deassertClock();
+        deassertAllControlsAndDepower();
         return false;
     }
 
-    deassertClock();
+    deassertAllControlsAndDepower();
     return true;
 }
 
 void flashReadID(uint8_t &manufacturer, uint8_t &device)
 {
-    deassertAllControls(); // Safety
+    deassertAllControlsAndDepower(); // Safety
 
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR | SYNC_ON_CLK);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_ENTRY_CMD, SYNC_ON_WR);
+ 
+    deassertWrite();
+    delayMicroseconds(1);
 
     manufacturer = busRead(FLASH_ID_MFG_ADDR, SYNC_ON_RD);
     device       = busRead(FLASH_ID_DEV_ADDR, SYNC_ON_RD);
@@ -560,7 +606,8 @@ void flashReadID(uint8_t &manufacturer, uint8_t &device)
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_UNLOCK_DATA_1, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_2, FLASH_UNLOCK_DATA_2, SYNC_ON_WR);
     busWrite(FLASH_UNLOCK_ADDR_1, FLASH_ID_EXIT_CMD, SYNC_ON_WR);
-    deassertClock();
+
+    deassertAllControlsAndDepower();
 }
 
 inline void blinkForAddress(unsigned int addr)
@@ -592,9 +639,14 @@ bool programFile(const char *filename)
             uint16_t addr = ROM_START + (bank ? ROM_BANK_SIZE : 0) + offset;
 
             if (offset == 0) {
-                if (!phase && interactive_mode) {
-                    Serial.print("Writing bank ");
-                    Serial.println(bank);
+                if (interactive_mode) {
+                    if (!phase) {
+                        Serial.print("Writing bank ");
+                        Serial.println(bank);
+                    } else if (phase) {
+                        Serial.print("Verifying bank ");
+                        Serial.println(bank);
+                    }
                 }
                 selectBank(bank);
             }
@@ -632,8 +684,8 @@ bool programFile(const char *filename)
         }
 
         if (!phase) {
-            delayMicroseconds(50);
             rom.seek(0);
+            delayMicroseconds(20);
             if (interactive_mode)
                 Serial.println("PROGRAM ROM VERIFY");
         }
@@ -708,9 +760,14 @@ bool blankRAM()
             uint16_t addr = RAM_START + offset;
 
             if (offset == 0) {
-                if (!phase && interactive_mode) {
-                    Serial.print("Resetting bank ");
-                    Serial.println(bank);
+                if (interactive_mode) {
+                    if (!phase) {
+                        Serial.print("Resetting bank ");
+                        Serial.println(bank);
+                    } else {
+                        Serial.print("Verifying bank ");
+                        Serial.println(bank);
+                    }
                 }
                 selectRAMBank(bank);
             }
@@ -724,9 +781,7 @@ bool blankRAM()
                     Serial.print("FAIL @ BYTE #");
                     Serial.print(physAddr + 1);
                     Serial.print(", BANK: 0x");
-                    if (bank < 0x1000) Serial.print('0');
-                    if (bank < 0x0100) Serial.print('0');
-                    if (bank < 0x0010) Serial.print('0');
+                    if (bank < 0x10) Serial.print('0');
                     Serial.print(bank, HEX);
                     Serial.print(", ADDR: 0x");
                     if (addr < 0x1000) Serial.print('0');
@@ -748,7 +803,7 @@ bool blankRAM()
         }
 
         if (!phase) {
-            delayMicroseconds(5);
+            delayMicroseconds(1);
             if (interactive_mode)
                 Serial.println("BLANK RAM VERIFY");
         }
@@ -788,9 +843,14 @@ bool programRAMFile(const char *filename)
             uint16_t addr = RAM_START + offset;
     
             if (offset == 0) {
-                if (!phase && interactive_mode) {
-                    Serial.print("Writing bank ");
-                    Serial.println(bank);
+                if (interactive_mode) {
+                    if (!phase) {
+                        Serial.print("Writing bank ");
+                        Serial.println(bank);
+                    } else {
+                        Serial.print("Verifying bank ");
+                        Serial.println(bank);
+                    }
                 }
                 selectRAMBank(bank);
             }
@@ -804,9 +864,7 @@ bool programRAMFile(const char *filename)
                     Serial.print("FAIL @ BYTE #");
                     Serial.print(physAddr + 1);
                     Serial.print(", BANK: 0x");
-                    if (bank < 0x1000) Serial.print('0');
-                    if (bank < 0x0100) Serial.print('0');
-                    if (bank < 0x0010) Serial.print('0');
+                    if (bank < 0x10) Serial.print('0');
                     Serial.print(bank, HEX);
                     Serial.print(", ADDR: 0x");
                     if (addr < 0x1000) Serial.print('0');
@@ -828,8 +886,8 @@ bool programRAMFile(const char *filename)
         }
 
         if (!phase) {
-            delayMicroseconds(5);
             ram.seek(0);
+            delayMicroseconds(1);
             if (interactive_mode)
                 Serial.println("PROGRAM RAM VERIFY");
         }
@@ -1018,6 +1076,13 @@ void processCommand(String line)
     if (!strcmp(argv[0], "RD") && argc == 2)
     {
         cmdRead(strtoul(argv[1], nullptr, 16));
+
+        if (HELP_PREVENT_BUS_CONT && !digitalRead(PIN_RD) && !digitalRead(PIN_WR)) {
+                Serial.println("Deasserting /WR to help prevent bus contention");
+                deassertWrite();
+                Serial.println("/WR <= HIGH");
+        }
+
         return;
     }
     
@@ -1027,6 +1092,11 @@ void processCommand(String line)
     if (!strcmp(argv[0], "WR") && argc == 2)
     {
         cmdWrite(strtoul(argv[1], nullptr, 16));
+
+        if (HELP_PREVENT_BUS_CONT && isOutput(PIN_DATA[0]) && digitalRead(PIN_WR)) {
+            Serial.println("Depowering data bus to help prevent bus contention");
+            setDataInput();
+        }
         return;
     }
     
@@ -1045,6 +1115,11 @@ void processCommand(String line)
     if (!strcmp(argv[0], "DEASSERT"))
     {
         cmdDeassert();
+
+        if (HELP_PREVENT_BUS_CONT && isOutput(PIN_DATA[0]) && digitalRead(PIN_WR)) {
+            Serial.println("Depowering data bus to help prevent bus contention");
+            setDataInput();
+        }
         return;
     }
 
@@ -1075,10 +1150,10 @@ void processCommand(String line)
         } else if (argc == 2) {
             cmdData(strtoul(argv[1], nullptr, 16));
 
-            if (HELP_PREVENT_BUS_CONT_DATA_SET && isOutput(PIN_DATA[0]) && digitalRead(PIN_WR)) {
+            if (HELP_PREVENT_BUS_CONT && isOutput(PIN_DATA[0]) && digitalRead(PIN_WR)) {
                 Serial.println("Asserting /WR to help prevent bus contention");
                 assertWrite();
-                Serial.println("/WR <= HIGH");
+                Serial.println("/WR <= LOW");
             }
             return;
         }
@@ -1310,12 +1385,6 @@ void cmdHelp()
     Serial.println();
     Serial.println("ROM Short-Hand Sizes: 512,1,2,4,8,16,32,64      (512Kbit to 64Mbit)");
     Serial.println("RAM Short-Hand Sizes: 2,4,8,16,32,64,128,256,512,1 (2Kbit to 1Mbit)");
-}
-
-inline bool isOutput(uint8_t pin)
-{
-    return (*portModeRegister(digitalPinToPort(pin)) &
-            digitalPinToBitMask(pin)) != 0;
 }
 
 void cmdStatus()
